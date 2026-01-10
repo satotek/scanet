@@ -56,7 +56,7 @@ jobs:
   typos:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Check spelling
         uses: crate-ci/typos@v1.40.0
@@ -66,7 +66,7 @@ jobs:
     env:
       BIN_NAME: scanet
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -83,7 +83,7 @@ jobs:
             exit 1
           fi
           SIZE=$(stat -c '%s' "$BIN_PATH")
-          SIZE_MB=$(echo "scale=2; $SIZE / 1048576" | bc)
+          SIZE_MB=$(awk "BEGIN {printf \"%.2f\", $SIZE / 1048576}")
           echo "## Binary Size" >> $GITHUB_STEP_SUMMARY
           echo "| Binary | Size |" >> $GITHUB_STEP_SUMMARY
           echo "|--------|------|" >> $GITHUB_STEP_SUMMARY
