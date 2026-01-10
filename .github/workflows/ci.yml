@@ -52,3 +52,31 @@ jobs:
 
       - name: Clippy
         run: cargo clippy -- -D warnings
+
+  typos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check spelling
+        uses: crate-ci/typos@master
+
+  binary-size:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Get binary size
+        run: |
+          SIZE=$(ls -l target/release/scanet | awk '{print $5}')
+          SIZE_MB=$(echo "scale=2; $SIZE / 1048576" | bc)
+          echo "## Binary Size" >> $GITHUB_STEP_SUMMARY
+          echo "| Binary | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| scanet | ${SIZE_MB} MB (${SIZE} bytes) |" >> $GITHUB_STEP_SUMMARY
