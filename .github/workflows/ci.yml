@@ -59,10 +59,12 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Check spelling
-        uses: crate-ci/typos@master
+        uses: crate-ci/typos@v1.40.0
 
   binary-size:
     runs-on: ubuntu-latest
+    env:
+      BIN_NAME: scanet
     steps:
       - uses: actions/checkout@v4
 
@@ -74,9 +76,15 @@ jobs:
 
       - name: Get binary size
         run: |
-          SIZE=$(ls -l target/release/scanet | awk '{print $5}')
+          BIN_PATH="target/release/${BIN_NAME}"
+          if [ ! -f "$BIN_PATH" ]; then
+            echo "Expected binary not found at: $BIN_PATH" >&2
+            ls -la target/release >&2 || true
+            exit 1
+          fi
+          SIZE=$(stat -c '%s' "$BIN_PATH")
           SIZE_MB=$(echo "scale=2; $SIZE / 1048576" | bc)
           echo "## Binary Size" >> $GITHUB_STEP_SUMMARY
           echo "| Binary | Size |" >> $GITHUB_STEP_SUMMARY
           echo "|--------|------|" >> $GITHUB_STEP_SUMMARY
-          echo "| scanet | ${SIZE_MB} MB (${SIZE} bytes) |" >> $GITHUB_STEP_SUMMARY
+          echo "| ${BIN_NAME} | ${SIZE_MB} MB (${SIZE} bytes) |" >> $GITHUB_STEP_SUMMARY

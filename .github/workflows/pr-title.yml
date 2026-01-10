@@ -4,12 +4,15 @@ on:
   pull_request:
     types: [opened, edited, synchronize]
 
+permissions:
+  pull-requests: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
       - name: Check PR title format
-        uses: amannn/action-semantic-pull-request@v5
+        uses: amannn/action-semantic-pull-request@0723387faaf9b38adef4775cd42cfd5155ed6017
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -26,7 +29,7 @@ jobs:
             chore
             revert
           requireScope: false
-          subjectPattern: ^.+$
+          subjectPattern: ^\S+(\s*\S+)*$
           subjectPatternError: |
             PRタイトルは Conventional Commits 形式で記述してください。
             例: feat: add new feature
