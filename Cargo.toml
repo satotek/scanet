@@ -11,6 +11,6 @@ crossterm = "0.29"
 tokio = { version = "1", features = ["full", "process"] }
 anyhow = "1.0"
 local-ip-address = "0.6"
-dns-lookup = "2.0"
+dns-lookup = "3.0"
 mac_oui = { version = "0.4", features = ["with-db"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
