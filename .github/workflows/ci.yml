@@ -59,6 +59,29 @@ jobs:
       - name: Check spelling
         uses: crate-ci/typos@v1.40.0
 
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin
+
+      - name: Run coverage
+        run: cargo tarpaulin --out json --output-dir coverage
+
+      - name: Display coverage
+        run: |
+          COVERAGE=$(cat coverage/tarpaulin-report.json | jq '.coverage_percentage')
+          echo "## Code Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Coverage | ${COVERAGE}% |" >> $GITHUB_STEP_SUMMARY
+
   binary-size:
     runs-on: ubuntu-latest
     env:
