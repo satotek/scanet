@@ -1,0 +1,6 @@
+[default.extend-words]
+# Allow certain words that might be flagged as typos
+ratatui = "ratatui"
+
+[files]
+extend-exclude = ["Cargo.lock", "target/"]

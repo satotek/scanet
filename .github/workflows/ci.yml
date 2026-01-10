@@ -52,3 +52,85 @@ jobs:
 
       - name: Clippy
         run: cargo clippy -- -D warnings
+
+  typos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check spelling
+        uses: crate-ci/typos@v1.40.0
+
+  binary-size:
+    runs-on: ubuntu-latest
+    env:
+      BIN_NAME: scanet
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build release binary (current)
+        run: cargo build --release
+
+      - name: Get current binary size
+        id: current
+        run: |
+          BIN_PATH="target/release/${BIN_NAME}"
+          if [ ! -f "$BIN_PATH" ]; then
+            echo "Expected binary not found at: $BIN_PATH" >&2
+            ls -la target/release >&2 || true
+            exit 1
+          fi
+          SIZE=$(stat -c '%s' "$BIN_PATH")
+          echo "size=$SIZE" >> $GITHUB_OUTPUT
+          cp "$BIN_PATH" "/tmp/${BIN_NAME}-current"
+
+      - name: Build release binary (base)
+        if: github.event_name == 'pull_request'
+        run: |
+          git checkout ${{ github.event.pull_request.base.sha }}
+          cargo build --release
+          cp "target/release/${BIN_NAME}" "/tmp/${BIN_NAME}-base" || true
+
+      - name: Compare binary sizes
+        run: |
+          CURRENT_SIZE=${{ steps.current.outputs.size }}
+          CURRENT_MB=$(awk "BEGIN {printf \"%.2f\", $CURRENT_SIZE / 1048576}")
+
+          echo "## Binary Size" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "/tmp/${BIN_NAME}-base" ]; then
+            BASE_SIZE=$(stat -c '%s' "/tmp/${BIN_NAME}-base")
+            BASE_MB=$(awk "BEGIN {printf \"%.2f\", $BASE_SIZE / 1048576}")
+            DIFF=$((CURRENT_SIZE - BASE_SIZE))
+            DIFF_KB=$(awk "BEGIN {printf \"%.2f\", $DIFF / 1024}")
+
+            if [ $DIFF -gt 0 ]; then
+              CHANGE="+${DIFF_KB} KB 📈"
+            elif [ $DIFF -lt 0 ]; then
+              CHANGE="${DIFF_KB} KB 📉"
+            else
+              CHANGE="No change"
+            fi
+
+            echo "| Binary | Current | Base | Change |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|---------|------|--------|" >> $GITHUB_STEP_SUMMARY
+            echo "| ${BIN_NAME} | ${CURRENT_MB} MB | ${BASE_MB} MB | ${CHANGE} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Binary | Size |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|------|" >> $GITHUB_STEP_SUMMARY
+            echo "| ${BIN_NAME} | ${CURRENT_MB} MB (${CURRENT_SIZE} bytes) |" >> $GITHUB_STEP_SUMMARY
+          fi
