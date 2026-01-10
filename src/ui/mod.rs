@@ -24,9 +24,12 @@ pub fn render(frame: &mut Frame, app: &App) {
         .split(frame.area());
 
     // Header
-    let header = Paragraph::new(format!("scanet - LAN Device Scanner    [{}]", app.scan_range_cidr()))
-        .style(Style::default().fg(Color::Cyan))
-        .block(Block::default().borders(Borders::ALL));
+    let header = Paragraph::new(format!(
+        "scanet - LAN Device Scanner    [{}]",
+        app.scan_range_cidr()
+    ))
+    .style(Style::default().fg(Color::Cyan))
+    .block(Block::default().borders(Borders::ALL));
     frame.render_widget(header, chunks[0]);
 
     // Device list
@@ -47,16 +50,22 @@ pub fn render(frame: &mut Frame, app: &App) {
                 app.total_count,
                 app.progress_percent()
             );
-            (progress, Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
+            (
+                progress,
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            )
         }
         ScanState::Waiting => {
             let remaining = app.wait_remaining_secs();
-            let status = format!(
-                "{} Waiting... {}s",
-                app.spinner_char(),
-                remaining
-            );
-            (status, Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+            let status = format!("{} Waiting... {}s", app.spinner_char(), remaining);
+            (
+                status,
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            )
         }
         ScanState::Idle => {
             let status = match app.time_since_last_scan() {

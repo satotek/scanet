@@ -11,10 +11,9 @@ pub async fn reverse_lookup(ip: Ipv4Addr) -> Option<String> {
     if let Ok(mut addrs) = lookup_host(&addr).await {
         if let Some(socket_addr) = addrs.next() {
             // Try to resolve hostname
-            let host_result = tokio::task::spawn_blocking(move || {
-                dns_lookup::lookup_addr(&socket_addr.ip())
-            })
-            .await;
+            let host_result =
+                tokio::task::spawn_blocking(move || dns_lookup::lookup_addr(&socket_addr.ip()))
+                    .await;
 
             if let Ok(Ok(hostname)) = host_result {
                 // Don't return if it's just the IP address

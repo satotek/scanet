@@ -78,9 +78,7 @@ fn parse_arp_line(line: &str) -> Option<(Ipv4Addr, String)> {
     }
 
     // Normalize MAC format (uppercase, colon-separated)
-    let mac = mac
-        .replace('-', ":")
-        .to_uppercase();
+    let mac = mac.replace('-', ":").to_uppercase();
 
     Some((ip, mac))
 }

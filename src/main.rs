@@ -25,9 +25,19 @@ enum ScanMessage {
     Initializing,
     ScanStarted,
     Device(Device),
-    UpdateDevice { ip: Ipv4Addr, hostname: Option<String> },
-    UpdateVendor { ip: Ipv4Addr, vendor: String },
-    Progress { scanned: usize, total: usize, current_ip: Ipv4Addr },
+    UpdateDevice {
+        ip: Ipv4Addr,
+        hostname: Option<String>,
+    },
+    UpdateVendor {
+        ip: Ipv4Addr,
+        vendor: String,
+    },
+    Progress {
+        scanned: usize,
+        total: usize,
+        current_ip: Ipv4Addr,
+    },
     ScanComplete,
 }
 
@@ -62,7 +72,13 @@ fn start_scan(
         let on_progress = move |scanned: usize, total: usize, current_ip: Ipv4Addr| {
             let tx = progress_tx.clone();
             tokio::spawn(async move {
-                let _ = tx.send(ScanMessage::Progress { scanned, total, current_ip }).await;
+                let _ = tx
+                    .send(ScanMessage::Progress {
+                        scanned,
+                        total,
+                        current_ip,
+                    })
+                    .await;
             });
         };
 
@@ -86,9 +102,9 @@ fn start_scan(
                 };
 
                 // Get vendor from MAC address
-                let vendor = mac.as_ref().and_then(|m| {
-                    oui_db.as_ref().as_ref().and_then(|db| lookup_vendor(db, m))
-                });
+                let vendor = mac
+                    .as_ref()
+                    .and_then(|m| oui_db.as_ref().as_ref().and_then(|db| lookup_vendor(db, m)));
 
                 // Send device with MAC and vendor
                 let mut device = device;
@@ -107,7 +123,9 @@ fn start_scan(
             });
         };
 
-        let _ = scanner.scan_with_callbacks(start, end, on_progress, on_device_found).await;
+        let _ = scanner
+            .scan_with_callbacks(start, end, on_progress, on_device_found)
+            .await;
         let _ = tx.send(ScanMessage::ScanComplete).await;
     });
 }
@@ -168,7 +186,11 @@ async fn main() -> Result<()> {
                 ScanMessage::UpdateVendor { ip, vendor } => {
                     app.update_device_vendor(ip, Some(vendor));
                 }
-                ScanMessage::Progress { scanned, total, current_ip } => {
+                ScanMessage::Progress {
+                    scanned,
+                    total,
+                    current_ip,
+                } => {
                     app.update_progress(scanned, total, Some(current_ip));
                 }
                 ScanMessage::ScanComplete => {
@@ -239,8 +261,15 @@ async fn main() -> Result<()> {
                                                     let ip = device.ip;
                                                     let tx_clone = tx.clone();
                                                     tokio::spawn(async move {
-                                                        if let Some(vendor) = lookup_vendor_online(&mac).await {
-                                                            let _ = tx_clone.send(ScanMessage::UpdateVendor { ip, vendor }).await;
+                                                        if let Some(vendor) =
+                                                            lookup_vendor_online(&mac).await
+                                                        {
+                                                            let _ = tx_clone
+                                                                .send(ScanMessage::UpdateVendor {
+                                                                    ip,
+                                                                    vendor,
+                                                                })
+                                                                .await;
                                                         }
                                                     });
                                                 }
@@ -280,12 +309,16 @@ async fn main() -> Result<()> {
                                     app.select_previous();
                                 }
                                 KeyCode::Char('+') | KeyCode::Char('=') => {
-                                    app.scan_interval_secs = app.scan_interval_secs.saturating_add(1);
-                                    app.status_message = format!("Interval: {}s", app.scan_interval_secs);
+                                    app.scan_interval_secs =
+                                        app.scan_interval_secs.saturating_add(1);
+                                    app.status_message =
+                                        format!("Interval: {}s", app.scan_interval_secs);
                                 }
                                 KeyCode::Char('-') | KeyCode::Char('_') => {
-                                    app.scan_interval_secs = app.scan_interval_secs.saturating_sub(1);
-                                    app.status_message = format!("Interval: {}s", app.scan_interval_secs);
+                                    app.scan_interval_secs =
+                                        app.scan_interval_secs.saturating_sub(1);
+                                    app.status_message =
+                                        format!("Interval: {}s", app.scan_interval_secs);
                                 }
                                 KeyCode::Char('r') => {
                                     if app.scan_state == ScanState::Idle {
@@ -295,34 +328,32 @@ async fn main() -> Result<()> {
                                 _ => {}
                             }
                         }
-                        View::RangeInput => {
-                            match key.code {
-                                KeyCode::Esc => {
-                                    app.current_view = View::Main;
-                                }
-                                KeyCode::Enter => {
-                                    app.apply_range_input();
-                                }
-                                KeyCode::Tab | KeyCode::Down | KeyCode::Up => {
-                                    app.toggle_range_input_field();
-                                }
-                                KeyCode::Left => {
-                                    app.range_input_cursor_left();
-                                }
-                                KeyCode::Right => {
-                                    app.range_input_cursor_right();
-                                }
-                                KeyCode::Backspace => {
-                                    app.range_input_pop();
-                                }
-                                KeyCode::Char(c) => {
-                                    if c.is_ascii_digit() || c == '.' || c == '/' {
-                                        app.range_input_push(c);
-                                    }
-                                }
-                                _ => {}
+                        View::RangeInput => match key.code {
+                            KeyCode::Esc => {
+                                app.current_view = View::Main;
                             }
-                        }
+                            KeyCode::Enter => {
+                                app.apply_range_input();
+                            }
+                            KeyCode::Tab | KeyCode::Down | KeyCode::Up => {
+                                app.toggle_range_input_field();
+                            }
+                            KeyCode::Left => {
+                                app.range_input_cursor_left();
+                            }
+                            KeyCode::Right => {
+                                app.range_input_cursor_right();
+                            }
+                            KeyCode::Backspace => {
+                                app.range_input_pop();
+                            }
+                            KeyCode::Char(c) => {
+                                if c.is_ascii_digit() || c == '.' || c == '/' {
+                                    app.range_input_push(c);
+                                }
+                            }
+                            _ => {}
+                        },
                     }
                 }
             }

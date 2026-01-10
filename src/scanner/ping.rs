@@ -40,10 +40,7 @@ impl PingScanner {
         let total = ips.len();
         let scanned = Arc::new(AtomicUsize::new(0));
 
-        let chunks: Vec<Vec<Ipv4Addr>> = ips
-            .chunks(self.concurrency)
-            .map(|c| c.to_vec())
-            .collect();
+        let chunks: Vec<Vec<Ipv4Addr>> = ips.chunks(self.concurrency).map(|c| c.to_vec()).collect();
 
         for chunk in chunks {
             let mut handles = Vec::new();

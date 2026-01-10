@@ -43,7 +43,9 @@ pub fn render_range_input(frame: &mut Frame, app: &App) {
 
     // Start IP field
     let start_style = if app.range_input_field == RangeInputField::Start {
-        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+        Style::default()
+            .fg(Color::Yellow)
+            .add_modifier(Modifier::BOLD)
     } else {
         Style::default().fg(Color::Gray)
     };
@@ -64,7 +66,9 @@ pub fn render_range_input(frame: &mut Frame, app: &App) {
 
     // End IP field
     let end_style = if app.range_input_field == RangeInputField::End {
-        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+        Style::default()
+            .fg(Color::Yellow)
+            .add_modifier(Modifier::BOLD)
     } else {
         Style::default().fg(Color::Gray)
     };
@@ -85,8 +89,7 @@ pub fn render_range_input(frame: &mut Frame, app: &App) {
 
     // Error message
     if let Some(error) = &app.range_input_error {
-        let error_text = Paragraph::new(error.as_str())
-            .style(Style::default().fg(Color::Red));
+        let error_text = Paragraph::new(error.as_str()).style(Style::default().fg(Color::Red));
         frame.render_widget(error_text, chunks[7]);
     }
 
@@ -103,7 +106,11 @@ pub fn render_range_input(frame: &mut Frame, app: &App) {
     frame.render_widget(help_text, chunks[8]);
 }
 
-fn render_input_field(value: &str, is_focused: bool, cursor_pos: Option<usize>) -> Paragraph<'static> {
+fn render_input_field(
+    value: &str,
+    is_focused: bool,
+    cursor_pos: Option<usize>,
+) -> Paragraph<'static> {
     let style = if is_focused {
         Style::default().fg(Color::White).bg(Color::DarkGray)
     } else {

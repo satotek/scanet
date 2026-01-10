@@ -7,9 +7,19 @@ use ratatui::{
 };
 
 pub fn render_device_list(frame: &mut Frame, app: &App, area: Rect) {
-    let header = Row::new(vec!["IP Address", "MAC Address", "Vendor", "Hostname", "Response"])
-        .style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
-        .height(1);
+    let header = Row::new(vec![
+        "IP Address",
+        "MAC Address",
+        "Vendor",
+        "Hostname",
+        "Response",
+    ])
+    .style(
+        Style::default()
+            .fg(Color::Yellow)
+            .add_modifier(Modifier::BOLD),
+    )
+    .height(1);
 
     let rows: Vec<Row> = app
         .devices

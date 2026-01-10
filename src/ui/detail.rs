@@ -25,7 +25,9 @@ pub fn render_device_detail(frame: &mut Frame, device: &Device) {
     let detail_text = vec![
         Line::from(Span::styled(
             "Device Details",
-            Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
         make_detail_line("IP Address", &ip_str),

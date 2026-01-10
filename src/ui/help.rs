@@ -14,11 +14,21 @@ pub fn render_help(frame: &mut Frame) {
 
     let help_text = vec![
         Line::from(vec![
-            Span::styled("scanet", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "scanet",
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            ),
             Span::raw(" - LAN Device Scanner"),
         ]),
         Line::from(""),
-        Line::from(Span::styled("Navigation", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))),
+        Line::from(Span::styled(
+            "Navigation",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        )),
         Line::from(""),
         Line::from(vec![
             Span::styled("  j / ↓  ", Style::default().fg(Color::Green)),
@@ -33,7 +43,12 @@ pub fn render_help(frame: &mut Frame) {
             Span::raw("Show device details"),
         ]),
         Line::from(""),
-        Line::from(Span::styled("Scanning", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))),
+        Line::from(Span::styled(
+            "Scanning",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        )),
         Line::from(""),
         Line::from(vec![
             Span::styled("  s      ", Style::default().fg(Color::Green)),
@@ -52,7 +67,12 @@ pub fn render_help(frame: &mut Frame) {
             Span::raw("Set scan range"),
         ]),
         Line::from(""),
-        Line::from(Span::styled("Other", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))),
+        Line::from(Span::styled(
+            "Other",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        )),
         Line::from(""),
         Line::from(vec![
             Span::styled("  ?      ", Style::default().fg(Color::Green)),
@@ -63,7 +83,10 @@ pub fn render_help(frame: &mut Frame) {
             Span::raw("Quit"),
         ]),
         Line::from(""),
-        Line::from(Span::styled("Press any key to close", Style::default().fg(Color::DarkGray))),
+        Line::from(Span::styled(
+            "Press any key to close",
+            Style::default().fg(Color::DarkGray),
+        )),
     ];
 
     let help = Paragraph::new(help_text)

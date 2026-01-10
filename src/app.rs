@@ -263,11 +263,7 @@ impl App {
         let broadcast = network | !mask;
 
         // For host addresses, use network+1 to broadcast-1
-        let start = if prefix >= 31 {
-            network
-        } else {
-            network + 1
-        };
+        let start = if prefix >= 31 { network } else { network + 1 };
         let end = if prefix >= 31 {
             broadcast
         } else {
