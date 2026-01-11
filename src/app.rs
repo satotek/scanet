@@ -383,6 +383,33 @@ mod tests {
         assert_eq!(result.unwrap_err(), "Invalid CIDR format");
     }
 
+    #[test]
+    fn test_parse_cidr_valid_32() {
+        let result = App::parse_cidr("192.168.1.1/32");
+        assert!(result.is_ok());
+        let (start, end) = result.unwrap();
+        assert_eq!(start, Ipv4Addr::new(192, 168, 1, 1));
+        assert_eq!(end, Ipv4Addr::new(192, 168, 1, 1));
+    }
+
+    #[test]
+    fn test_parse_cidr_valid_31() {
+        let result = App::parse_cidr("192.168.1.0/31");
+        assert!(result.is_ok());
+        let (start, end) = result.unwrap();
+        assert_eq!(start, Ipv4Addr::new(192, 168, 1, 0));
+        assert_eq!(end, Ipv4Addr::new(192, 168, 1, 1));
+    }
+
+    #[test]
+    fn test_parse_cidr_valid_0() {
+        let result = App::parse_cidr("0.0.0.0/0");
+        assert!(result.is_ok());
+        let (start, end) = result.unwrap();
+        assert_eq!(start, Ipv4Addr::new(0, 0, 0, 1));
+        assert_eq!(end, Ipv4Addr::new(255, 255, 255, 254));
+    }
+
     // ==================== calculate_scan_range tests ====================
 
     #[test]
@@ -479,6 +506,13 @@ mod tests {
     }
 
     #[test]
+    fn test_select_previous_empty_list() {
+        let mut app = App::new(Ipv4Addr::new(192, 168, 1, 1));
+        app.select_previous();
+        assert_eq!(app.selected_index, 0);
+    }
+
+    #[test]
     fn test_select_next_wraps() {
         let mut app = App::new(Ipv4Addr::new(192, 168, 1, 1));
         app.devices.push(Device::new(
@@ -563,6 +597,7 @@ mod tests {
         ));
         assert_eq!(app.devices.len(), 1);
         assert!(!app.devices[0].is_new);
+        assert_eq!(app.devices[0].response_time, Duration::from_millis(3));
     }
 
     // ==================== apply_range_input tests ====================

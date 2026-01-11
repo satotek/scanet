@@ -73,7 +73,7 @@ pub fn parse_arp_line(line: &str) -> Option<(Ipv4Addr, String)> {
     let mac = &after_at[..mac_end];
 
     // Skip incomplete entries
-    if mac == "(incomplete)" || mac == "<incomplete>" {
+    if mac == "(incomplete)" || mac == "<incomplete>" || mac.to_lowercase() == "incomplete" {
         return None;
     }
 
@@ -127,6 +127,13 @@ mod tests {
     #[test]
     fn test_parse_arp_line_incomplete_angle() {
         let line = "? (192.168.1.1) at <incomplete> on en0";
+        let result = parse_arp_line(line);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_parse_arp_line_incomplete_bare() {
+        let line = "? (192.168.1.1) at incomplete on en0";
         let result = parse_arp_line(line);
         assert!(result.is_none());
     }
