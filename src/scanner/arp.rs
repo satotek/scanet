@@ -59,7 +59,7 @@ pub async fn get_mac_for_ip(ip: Ipv4Addr) -> Option<String> {
 /// Parse a single line from arp -a output
 /// macOS format: ? (192.168.1.1) at aa:bb:cc:dd:ee:ff on en0 ifscope [ethernet]
 /// Linux format: ? (192.168.1.1) at aa:bb:cc:dd:ee:ff [ether] on eth0
-fn parse_arp_line(line: &str) -> Option<(Ipv4Addr, String)> {
+pub fn parse_arp_line(line: &str) -> Option<(Ipv4Addr, String)> {
     // Find IP in parentheses
     let start = line.find('(')? + 1;
     let end = line.find(')')?;
@@ -73,7 +73,7 @@ fn parse_arp_line(line: &str) -> Option<(Ipv4Addr, String)> {
     let mac = &after_at[..mac_end];
 
     // Skip incomplete entries
-    if mac == "(incomplete)" || mac == "<incomplete>" {
+    if mac == "(incomplete)" || mac == "<incomplete>" || mac.to_lowercase() == "incomplete" {
         return None;
     }
 
@@ -81,4 +81,81 @@ fn parse_arp_line(line: &str) -> Option<(Ipv4Addr, String)> {
     let mac = mac.replace('-', ":").to_uppercase();
 
     Some((ip, mac))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_arp_line_macos_format() {
+        let line = "? (192.168.1.1) at aa:bb:cc:dd:ee:ff on en0 ifscope [ethernet]";
+        let result = parse_arp_line(line);
+        assert!(result.is_some());
+        let (ip, mac) = result.unwrap();
+        assert_eq!(ip, Ipv4Addr::new(192, 168, 1, 1));
+        assert_eq!(mac, "AA:BB:CC:DD:EE:FF");
+    }
+
+    #[test]
+    fn test_parse_arp_line_linux_format() {
+        let line = "? (10.0.0.5) at 11:22:33:44:55:66 [ether] on eth0";
+        let result = parse_arp_line(line);
+        assert!(result.is_some());
+        let (ip, mac) = result.unwrap();
+        assert_eq!(ip, Ipv4Addr::new(10, 0, 0, 5));
+        assert_eq!(mac, "11:22:33:44:55:66");
+    }
+
+    #[test]
+    fn test_parse_arp_line_hyphen_mac() {
+        let line = "? (192.168.1.100) at aa-bb-cc-dd-ee-ff on en0";
+        let result = parse_arp_line(line);
+        assert!(result.is_some());
+        let (ip, mac) = result.unwrap();
+        assert_eq!(ip, Ipv4Addr::new(192, 168, 1, 100));
+        assert_eq!(mac, "AA:BB:CC:DD:EE:FF");
+    }
+
+    #[test]
+    fn test_parse_arp_line_incomplete() {
+        let line = "? (192.168.1.1) at (incomplete) on en0";
+        let result = parse_arp_line(line);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_parse_arp_line_incomplete_angle() {
+        let line = "? (192.168.1.1) at <incomplete> on en0";
+        let result = parse_arp_line(line);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_parse_arp_line_incomplete_bare() {
+        let line = "? (192.168.1.1) at incomplete on en0";
+        let result = parse_arp_line(line);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_parse_arp_line_no_parentheses() {
+        let line = "malformed line without parentheses";
+        let result = parse_arp_line(line);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_parse_arp_line_no_at() {
+        let line = "? (192.168.1.1) missing the keyword";
+        let result = parse_arp_line(line);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_parse_arp_line_invalid_ip() {
+        let line = "? (invalid.ip) at aa:bb:cc:dd:ee:ff on en0";
+        let result = parse_arp_line(line);
+        assert!(result.is_none());
+    }
 }

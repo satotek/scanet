@@ -320,3 +320,313 @@ impl App {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    // ==================== parse_cidr tests ====================
+
+    #[test]
+    fn test_parse_cidr_valid_24() {
+        let result = App::parse_cidr("192.168.1.0/24");
+        assert!(result.is_ok());
+        let (start, end) = result.unwrap();
+        assert_eq!(start, Ipv4Addr::new(192, 168, 1, 1));
+        assert_eq!(end, Ipv4Addr::new(192, 168, 1, 254));
+    }
+
+    #[test]
+    fn test_parse_cidr_valid_25() {
+        let result = App::parse_cidr("10.0.0.0/25");
+        assert!(result.is_ok());
+        let (start, end) = result.unwrap();
+        assert_eq!(start, Ipv4Addr::new(10, 0, 0, 1));
+        assert_eq!(end, Ipv4Addr::new(10, 0, 0, 126));
+    }
+
+    #[test]
+    fn test_parse_cidr_valid_16() {
+        let result = App::parse_cidr("172.16.0.0/16");
+        assert!(result.is_ok());
+        let (start, end) = result.unwrap();
+        assert_eq!(start, Ipv4Addr::new(172, 16, 0, 1));
+        assert_eq!(end, Ipv4Addr::new(172, 16, 255, 254));
+    }
+
+    #[test]
+    fn test_parse_cidr_invalid_prefix_too_large() {
+        let result = App::parse_cidr("192.168.1.0/33");
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Prefix must be 0-32");
+    }
+
+    #[test]
+    fn test_parse_cidr_invalid_ip() {
+        let result = App::parse_cidr("invalid.ip/24");
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Invalid IP address");
+    }
+
+    #[test]
+    fn test_parse_cidr_invalid_prefix_format() {
+        let result = App::parse_cidr("192.168.1.0/abc");
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Invalid prefix length");
+    }
+
+    #[test]
+    fn test_parse_cidr_missing_prefix() {
+        let result = App::parse_cidr("192.168.1.0");
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Invalid CIDR format");
+    }
+
+    #[test]
+    fn test_parse_cidr_valid_32() {
+        let result = App::parse_cidr("192.168.1.1/32");
+        assert!(result.is_ok());
+        let (start, end) = result.unwrap();
+        assert_eq!(start, Ipv4Addr::new(192, 168, 1, 1));
+        assert_eq!(end, Ipv4Addr::new(192, 168, 1, 1));
+    }
+
+    #[test]
+    fn test_parse_cidr_valid_31() {
+        let result = App::parse_cidr("192.168.1.0/31");
+        assert!(result.is_ok());
+        let (start, end) = result.unwrap();
+        assert_eq!(start, Ipv4Addr::new(192, 168, 1, 0));
+        assert_eq!(end, Ipv4Addr::new(192, 168, 1, 1));
+    }
+
+    #[test]
+    fn test_parse_cidr_valid_0() {
+        let result = App::parse_cidr("0.0.0.0/0");
+        assert!(result.is_ok());
+        let (start, end) = result.unwrap();
+        assert_eq!(start, Ipv4Addr::new(0, 0, 0, 1));
+        assert_eq!(end, Ipv4Addr::new(255, 255, 255, 254));
+    }
+
+    // ==================== calculate_scan_range tests ====================
+
+    #[test]
+    fn test_calculate_scan_range_standard() {
+        let (start, end) = App::calculate_scan_range(Ipv4Addr::new(192, 168, 1, 100));
+        assert_eq!(start, Ipv4Addr::new(192, 168, 1, 1));
+        assert_eq!(end, Ipv4Addr::new(192, 168, 1, 254));
+    }
+
+    #[test]
+    fn test_calculate_scan_range_class_a() {
+        let (start, end) = App::calculate_scan_range(Ipv4Addr::new(10, 0, 5, 50));
+        assert_eq!(start, Ipv4Addr::new(10, 0, 5, 1));
+        assert_eq!(end, Ipv4Addr::new(10, 0, 5, 254));
+    }
+
+    #[test]
+    fn test_calculate_scan_range_edge_ip() {
+        let (start, end) = App::calculate_scan_range(Ipv4Addr::new(172, 16, 0, 1));
+        assert_eq!(start, Ipv4Addr::new(172, 16, 0, 1));
+        assert_eq!(end, Ipv4Addr::new(172, 16, 0, 254));
+    }
+
+    // ==================== progress_percent tests ====================
+
+    #[test]
+    fn test_progress_percent_zero_total() {
+        let mut app = App::new(Ipv4Addr::new(192, 168, 1, 1));
+        app.total_count = 0;
+        app.scanned_count = 0;
+        assert_eq!(app.progress_percent(), 0);
+    }
+
+    #[test]
+    fn test_progress_percent_half() {
+        let mut app = App::new(Ipv4Addr::new(192, 168, 1, 1));
+        app.total_count = 100;
+        app.scanned_count = 50;
+        assert_eq!(app.progress_percent(), 50);
+    }
+
+    #[test]
+    fn test_progress_percent_complete() {
+        let mut app = App::new(Ipv4Addr::new(192, 168, 1, 1));
+        app.total_count = 100;
+        app.scanned_count = 100;
+        assert_eq!(app.progress_percent(), 100);
+    }
+
+    #[test]
+    fn test_progress_percent_integer_division() {
+        let mut app = App::new(Ipv4Addr::new(192, 168, 1, 1));
+        app.total_count = 3;
+        app.scanned_count = 1;
+        assert_eq!(app.progress_percent(), 33);
+    }
+
+    // ==================== spinner_char tests ====================
+
+    #[test]
+    fn test_spinner_char_index_0() {
+        let app = App::new(Ipv4Addr::new(192, 168, 1, 1));
+        assert_eq!(app.spinner_char(), '⠋');
+    }
+
+    #[test]
+    fn test_spinner_char_cycles() {
+        let mut app = App::new(Ipv4Addr::new(192, 168, 1, 1));
+        app.spinner_index = 5;
+        assert_eq!(app.spinner_char(), '⠴');
+    }
+
+    // ==================== scan_range_cidr tests ====================
+
+    #[test]
+    fn test_scan_range_cidr_format() {
+        let app = App::new(Ipv4Addr::new(192, 168, 1, 100));
+        assert_eq!(app.scan_range_cidr(), "192.168.1.0/24");
+    }
+
+    #[test]
+    fn test_scan_range_cidr_different_network() {
+        let app = App::new(Ipv4Addr::new(10, 0, 5, 50));
+        assert_eq!(app.scan_range_cidr(), "10.0.5.0/24");
+    }
+
+    // ==================== select_next / select_previous tests ====================
+
+    #[test]
+    fn test_select_next_empty_list() {
+        let mut app = App::new(Ipv4Addr::new(192, 168, 1, 1));
+        app.select_next();
+        assert_eq!(app.selected_index, 0);
+    }
+
+    #[test]
+    fn test_select_previous_empty_list() {
+        let mut app = App::new(Ipv4Addr::new(192, 168, 1, 1));
+        app.select_previous();
+        assert_eq!(app.selected_index, 0);
+    }
+
+    #[test]
+    fn test_select_next_wraps() {
+        let mut app = App::new(Ipv4Addr::new(192, 168, 1, 1));
+        app.devices.push(Device::new(
+            Ipv4Addr::new(192, 168, 1, 1),
+            Duration::from_millis(1),
+        ));
+        app.devices.push(Device::new(
+            Ipv4Addr::new(192, 168, 1, 2),
+            Duration::from_millis(1),
+        ));
+        app.devices.push(Device::new(
+            Ipv4Addr::new(192, 168, 1, 3),
+            Duration::from_millis(1),
+        ));
+        app.selected_index = 2;
+        app.select_next();
+        assert_eq!(app.selected_index, 0);
+    }
+
+    #[test]
+    fn test_select_previous_wraps() {
+        let mut app = App::new(Ipv4Addr::new(192, 168, 1, 1));
+        app.devices.push(Device::new(
+            Ipv4Addr::new(192, 168, 1, 1),
+            Duration::from_millis(1),
+        ));
+        app.devices.push(Device::new(
+            Ipv4Addr::new(192, 168, 1, 2),
+            Duration::from_millis(1),
+        ));
+        app.devices.push(Device::new(
+            Ipv4Addr::new(192, 168, 1, 3),
+            Duration::from_millis(1),
+        ));
+        app.selected_index = 0;
+        app.select_previous();
+        assert_eq!(app.selected_index, 2);
+    }
+
+    // ==================== add_device tests ====================
+
+    #[test]
+    fn test_add_device_new() {
+        let mut app = App::new(Ipv4Addr::new(192, 168, 1, 1));
+        let device = Device::new(Ipv4Addr::new(192, 168, 1, 10), Duration::from_millis(5));
+        app.add_device(device);
+        assert_eq!(app.devices.len(), 1);
+        assert!(app.devices[0].is_new);
+    }
+
+    #[test]
+    fn test_add_device_sorted() {
+        let mut app = App::new(Ipv4Addr::new(192, 168, 1, 1));
+        app.add_device(Device::new(
+            Ipv4Addr::new(192, 168, 1, 30),
+            Duration::from_millis(1),
+        ));
+        app.add_device(Device::new(
+            Ipv4Addr::new(192, 168, 1, 10),
+            Duration::from_millis(1),
+        ));
+        app.add_device(Device::new(
+            Ipv4Addr::new(192, 168, 1, 20),
+            Duration::from_millis(1),
+        ));
+        assert_eq!(app.devices[0].ip, Ipv4Addr::new(192, 168, 1, 10));
+        assert_eq!(app.devices[1].ip, Ipv4Addr::new(192, 168, 1, 20));
+        assert_eq!(app.devices[2].ip, Ipv4Addr::new(192, 168, 1, 30));
+    }
+
+    #[test]
+    fn test_add_device_update_existing() {
+        let mut app = App::new(Ipv4Addr::new(192, 168, 1, 1));
+        app.add_device(Device::new(
+            Ipv4Addr::new(192, 168, 1, 10),
+            Duration::from_millis(5),
+        ));
+        assert!(app.devices[0].is_new);
+        app.add_device(Device::new(
+            Ipv4Addr::new(192, 168, 1, 10),
+            Duration::from_millis(3),
+        ));
+        assert_eq!(app.devices.len(), 1);
+        assert!(!app.devices[0].is_new);
+        assert_eq!(app.devices[0].response_time, Duration::from_millis(3));
+    }
+
+    // ==================== apply_range_input tests ====================
+
+    #[test]
+    fn test_apply_range_input_valid_cidr() {
+        let mut app = App::new(Ipv4Addr::new(192, 168, 1, 1));
+        app.range_input_start = "10.0.0.0/24".to_string();
+        assert!(app.apply_range_input());
+        assert_eq!(app.scan_range.0, Ipv4Addr::new(10, 0, 0, 1));
+        assert_eq!(app.scan_range.1, Ipv4Addr::new(10, 0, 0, 254));
+    }
+
+    #[test]
+    fn test_apply_range_input_valid_ip_range() {
+        let mut app = App::new(Ipv4Addr::new(192, 168, 1, 1));
+        app.range_input_start = "192.168.1.1".to_string();
+        app.range_input_end = "192.168.1.100".to_string();
+        assert!(app.apply_range_input());
+        assert_eq!(app.scan_range.0, Ipv4Addr::new(192, 168, 1, 1));
+        assert_eq!(app.scan_range.1, Ipv4Addr::new(192, 168, 1, 100));
+    }
+
+    #[test]
+    fn test_apply_range_input_invalid_range() {
+        let mut app = App::new(Ipv4Addr::new(192, 168, 1, 1));
+        app.range_input_start = "192.168.1.100".to_string();
+        app.range_input_end = "192.168.1.50".to_string();
+        assert!(!app.apply_range_input());
+        assert!(app.range_input_error.is_some());
+    }
+}
